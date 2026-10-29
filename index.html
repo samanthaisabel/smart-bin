@@ -347,6 +347,13 @@
         </div>
       </div>
 
+      <!-- Test Simulation Button (For Testing without Raspberry Pi) -->
+      <div style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed rgba(255,255,255,0.15);">
+        <button id="simBtn" class="btn" style="background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.5); color: #93c5fd; font-size: 0.85rem; padding: 10px;">
+          🧪 Simulate Pi Trash Drop (+1 Point)
+        </button>
+      </div>
+
       <button class="btn btn-secondary" id="logoutBtn">Switch User</button>
     </div>
   </div>
@@ -363,8 +370,8 @@
        ===================================================================== */
     const firebaseConfig = {
       // REPLACE with your Firebase project config or databaseURL:
-      databaseURL: "https://smart-bin-1310e-default-rtdb.asia-southeast1.firebasedatabase.app/",
-      projectId: "smart-bin"
+      databaseURL: "https://smart-trash-bin-demo-default-rtdb.firebaseio.com",
+      projectId: "smart-trash-bin-demo"
     };
 
     // Initialize Firebase
@@ -539,6 +546,32 @@
       localStorage.removeItem("smart_bin_user");
       location.reload();
     });
+
+    // Simulate Trash Drop Button (Test without Raspberry Pi)
+    const simBtn = document.getElementById("simBtn");
+    if (simBtn) {
+      simBtn.addEventListener("click", () => {
+        if (!currentUserId) return;
+
+        if (isFirebaseReady && db) {
+          // Increment in Firebase Realtime DB
+          const userRef = db.ref("users/" + currentUserId);
+          userRef.transaction((data) => {
+            if (data) {
+              data.points = (data.points || 0) + 1;
+              data.lastUpdated = Date.now();
+            }
+            return data;
+          });
+        } else {
+          // Local storage fallback
+          const cur = parseInt(localStorage.getItem("points_" + currentUserId) || "0", 10);
+          const next = cur + 1;
+          localStorage.setItem("points_" + currentUserId, next);
+          updatePointsUI(next);
+        }
+      });
+    }
   </script>
 </body>
 </html>
