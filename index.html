@@ -3,18 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EcoRewards - Smart Trash Bin Portal</title>
-  <!-- Google Fonts & Font Awesome -->
+  <title>Smart Bin Portal</title>
+  <!-- Google Fonts & QRCode.js & Canvas Confetti -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <!-- QRCode.js for client-side QR generation (No server needed) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <!-- Canvas Confetti for celebratory points animation -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <!-- Firebase App & Realtime Database SDKs (Compat version for simplicity) -->
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
   <style>
@@ -22,6 +19,8 @@
       --primary: #10b981;
       --primary-dark: #059669;
       --accent: #3b82f6;
+      --danger: #ef4444;
+      --warning: #f59e0b;
       --bg: #0f172a;
       --card-bg: rgba(30, 41, 59, 0.7);
       --border: rgba(255, 255, 255, 0.1);
@@ -54,15 +53,14 @@
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 24px;
-      padding: 32px 28px;
+      padding: 30px 24px;
       box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
       position: relative;
-      overflow: hidden;
     }
 
     .header {
       text-align: center;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
     .header .badge {
@@ -77,7 +75,7 @@
       font-weight: 700;
       letter-spacing: 0.5px;
       text-transform: uppercase;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
 
     .header h1 {
@@ -86,13 +84,35 @@
       letter-spacing: -0.5px;
     }
 
-    .header p {
-      color: var(--text-muted);
-      font-size: 0.9rem;
-      margin-top: 4px;
+    /* Mode Navigation Tabs */
+    .tab-nav {
+      display: flex;
+      background: rgba(15, 23, 42, 0.7);
+      border-radius: 14px;
+      padding: 4px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
     }
 
-    /* Auth Form */
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn.active {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
     .form-group {
       margin-bottom: 16px;
     }
@@ -151,7 +171,7 @@
       background: transparent;
       color: var(--text-muted);
       border: 1px solid var(--border);
-      margin-top: 10px;
+      margin-top: 14px;
     }
 
     .btn-secondary:hover {
@@ -159,7 +179,7 @@
       color: var(--text);
     }
 
-    /* Dashboard */
+    /* User Dashboard */
     .dashboard {
       display: none;
       text-align: center;
@@ -171,13 +191,38 @@
       margin-bottom: 8px;
     }
 
+    .live-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: #34d399;
+      background: rgba(16, 185, 129, 0.1);
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+
+    .live-pulse {
+      width: 8px;
+      height: 8px;
+      background: #34d399;
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(52, 211, 153, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+    }
+
     .points-card {
       background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(59, 130, 246, 0.1));
       border: 1px solid rgba(16, 185, 129, 0.3);
       border-radius: 20px;
-      padding: 20px;
-      margin-bottom: 24px;
-      position: relative;
+      padding: 18px;
+      margin-bottom: 20px;
     }
 
     .points-label {
@@ -207,7 +252,7 @@
       padding: 16px;
       border-radius: 20px;
       display: inline-block;
-      margin: 10px auto 16px;
+      margin: 8px auto 14px;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
     }
 
@@ -219,34 +264,98 @@
     .qr-hint {
       font-size: 0.85rem;
       color: var(--text-muted);
-      line-height: 1.4;
-      margin-bottom: 20px;
-    }
-
-    .live-status {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.8rem;
-      color: #34d399;
-      background: rgba(16, 185, 129, 0.1);
-      padding: 4px 12px;
-      border-radius: 20px;
       margin-bottom: 16px;
     }
 
-    .live-pulse {
-      width: 8px;
-      height: 8px;
-      background: #34d399;
-      border-radius: 50%;
+    /* Admin Multi-Location Card Styles */
+    .bins-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 380px;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+
+    .bin-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      text-align: left;
+      transition: border-color 0.2s;
+    }
+
+    .bin-card.is-full-card {
+      border-color: rgba(239, 68, 68, 0.4);
+      background: rgba(239, 68, 68, 0.08);
+    }
+
+    .bin-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .bin-location-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .bin-status-chip {
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .chip-ok {
+      background: rgba(16, 185, 129, 0.2);
+      color: #6ee7b7;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+
+    .chip-warning {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fde68a;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .chip-full {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.4);
       animation: pulse 1.5s infinite;
     }
 
-    @keyframes pulse {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); }
-      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(52, 211, 153, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+    .capacity-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .progress-bar-bg {
+      width: 100%;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 10px;
+      transition: width 0.5s ease, background 0.3s ease;
     }
 
     .alert {
@@ -266,25 +375,6 @@
       border: 1px solid rgba(59, 130, 246, 0.4);
       color: #93c5fd;
     }
-
-    .history-card {
-      margin-top: 14px;
-      text-align: left;
-      background: rgba(15, 23, 42, 0.5);
-      border-radius: 14px;
-      padding: 12px;
-      font-size: 0.8rem;
-      max-height: 110px;
-      overflow-y: auto;
-    }
-    .history-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 4px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-      color: var(--text-muted);
-    }
-    .history-item:last-child { border-bottom: none; }
   </style>
 </head>
 <body>
@@ -296,73 +386,97 @@
       <h1>SMART BIN</h1>
     </div>
 
+    <!-- Mode Selector Tabs -->
+    <div class="tab-nav">
+      <button class="tab-btn active" id="tabUserBtn">👤 User</button>
+      <button class="tab-btn" id="tabAdminBtn">🛡️ Admin</button>
+    </div>
+
     <!-- Alert Box -->
     <div id="alertBox" class="alert"></div>
 
-    <!-- 1. LOGIN / REGISTER VIEW -->
-    <div id="authSection">
-      <div class="form-group">
-        <label>Enter Username</label>
-        <input type="text" id="usernameInput" placeholder="e.g. Alex" />
-      </div>
-      <button class="btn btn-primary" id="loginBtn">Get QR Code</button>
-    </div>
-
-    <!-- 2. DASHBOARD VIEW -->
-    <div id="dashboardSection" class="dashboard">
-      <div class="user-greeting">Welcome, <strong id="displayName"></strong>!</div>
-      
-      <!-- Live Status -->
-      <div class="live-status">
-        <div class="live-pulse"></div>
-        Live Connected
-      </div>
-
-      <!-- Real-time Points Display -->
-      <div class="points-card">
-        <div class="points-label">TOTAL POINTS</div>
-        <div class="points-value" id="pointsDisplay">0</div>
-      </div>
-
-      <!-- QR Code Container -->
-      <div class="qr-wrapper">
-        <div id="qrcode"></div>
-      </div>
-
-      <div class="qr-hint">
-        Point this QR code at the scanner
-      </div>
-
-      <!-- Recent Log -->
-      <div class="history-card" id="historyLog">
-        <div style="font-weight: 700; margin-bottom: 4px; color: #f8fafc;">Recent Activity:</div>
-        <div class="history-item">
-          <span>Ready</span>
-          <span>Just now</span>
+    <!-- ==================== 1. USER VIEW ==================== -->
+    <div id="userSection">
+      <!-- User Login -->
+      <div id="userAuthSubSection">
+        <div class="form-group">
+          <label>Enter Username</label>
+          <input type="text" id="usernameInput" placeholder="e.g. Alex" />
         </div>
+        <button class="btn btn-primary" id="loginBtn">Get QR Code</button>
       </div>
 
-      <button class="btn btn-secondary" id="logoutBtn" style="margin-top: 16px;">Switch User</button>
+      <!-- User Dashboard -->
+      <div id="userDashboardSubSection" class="dashboard">
+        <div class="user-greeting">Welcome, <strong id="displayName"></strong>!</div>
+        
+        <div class="live-status">
+          <div class="live-pulse"></div>
+          Live Connected
+        </div>
+
+        <div class="points-card">
+          <div class="points-label">TOTAL POINTS</div>
+          <div class="points-value" id="pointsDisplay">0</div>
+        </div>
+
+        <div class="qr-wrapper">
+          <div id="qrcode"></div>
+        </div>
+
+        <div class="qr-hint">
+          Point this QR code at the scanner
+        </div>
+
+        <button class="btn btn-secondary" id="logoutBtn">Switch User</button>
+      </div>
     </div>
+
+    <!-- ==================== 2. ADMIN VIEW ==================== -->
+    <div id="adminSection" style="display: none;">
+      <!-- Admin Personnel Authentication -->
+      <div id="adminAuthSubSection">
+        <p style="font-size:0.8rem; color:var(--text-muted); text-align:center; margin-bottom:16px;">
+          🔒 Authorized Personnel Access Only
+        </p>
+        <div class="form-group">
+          <label>Personnel Username</label>
+          <input type="text" id="adminUsernameInput" placeholder="Enter admin username" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label>Personnel Password</label>
+          <input type="password" id="adminPasswordInput" placeholder="••••••••" autocomplete="current-password" />
+        </div>
+        <button class="btn btn-primary" id="adminLoginBtn">Authenticate & Enter</button>
+      </div>
+
+      <!-- Admin Multi-Location Dashboard -->
+      <div id="adminDashboardSubSection" style="display: none;">
+        <div style="font-size:0.85rem; font-weight:700; color:var(--text-muted); margin-bottom:12px; text-align:left;">
+          BIN NETWORK LOCATIONS:
+        </div>
+
+        <!-- Dynamic List of Location Cards -->
+        <div id="binsList" class="bins-list">
+          <!-- Rendered dynamically by JavaScript -->
+        </div>
+
+        <button class="btn btn-secondary" id="adminLogoutBtn">Exit Admin</button>
+      </div>
+    </div>
+
   </div>
 
   <script>
     /* =====================================================================
        FIREBASE CONFIGURATION
-       To connect your own free Firebase Database:
-       1. Go to https://console.firebase.google.com/
-       2. Click "Add project" -> Name it (e.g. "smart-trash-bin")
-       3. Go to "Build" -> "Realtime Database" -> "Create Database"
-       4. Start in "Test Mode" (allows read/write)
-       5. Copy your databaseURL and replace below!
        ===================================================================== */
     const firebaseConfig = {
-      // REPLACE with your Firebase project config or databaseURL:
+      // REPLACE with your Firebase Realtime Database URL:
       databaseURL: "https://smart-bin-1310e-default-rtdb.asia-southeast1.firebasedatabase.app/",
       projectId: "smart-bin"
     };
 
-    // Initialize Firebase
     let db = null;
     let isFirebaseReady = false;
     try {
@@ -372,27 +486,74 @@
         isFirebaseReady = true;
       }
     } catch (e) {
-      console.warn("Firebase not configured with active credentials. Running in local simulation mode.", e);
+      console.warn("Firebase not configured with active credentials.", e);
     }
 
-    // Audio chime sound when points increase
     const chimeAudio = new Audio("https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3");
 
-    // Elements
-    const authSection = document.getElementById("authSection");
-    const dashboardSection = document.getElementById("dashboardSection");
+    // UI Tab Switching Elements
+    const tabUserBtn = document.getElementById("tabUserBtn");
+    const tabAdminBtn = document.getElementById("tabAdminBtn");
+    const userSection = document.getElementById("userSection");
+    const adminSection = document.getElementById("adminSection");
+
+    // User Elements
+    const userAuthSubSection = document.getElementById("userAuthSubSection");
+    const userDashboardSubSection = document.getElementById("userDashboardSubSection");
     const usernameInput = document.getElementById("usernameInput");
     const loginBtn = document.getElementById("loginBtn");
     const logoutBtn = document.getElementById("logoutBtn");
     const displayName = document.getElementById("displayName");
     const pointsDisplay = document.getElementById("pointsDisplay");
-    const alertBox = document.getElementById("alertBox");
-    const historyLog = document.getElementById("historyLog");
     const qrContainer = document.getElementById("qrcode");
+    const alertBox = document.getElementById("alertBox");
+
+    // Admin Elements
+    const adminAuthSubSection = document.getElementById("adminAuthSubSection");
+    const adminDashboardSubSection = document.getElementById("adminDashboardSubSection");
+    const adminUsernameInput = document.getElementById("adminUsernameInput");
+    const adminPasswordInput = document.getElementById("adminPasswordInput");
+    const adminLoginBtn = document.getElementById("adminLoginBtn");
+    const adminLogoutBtn = document.getElementById("adminLogoutBtn");
+    const binsList = document.getElementById("binsList");
+
+    // =========================================================================
+    // ADMIN CREDENTIALS CONFIGURATION
+    // You can change the admin username and password here anytime:
+    // =========================================================================
+    const ADMIN_CREDENTIALS = {
+      username: "admin",
+      password: "adminpassword123"
+    };
 
     let currentUserId = null;
     let qrInstance = null;
-    let pointsListener = null;
+    let userPointsListener = null;
+    let binsListener = null;
+
+    // EN Building 1st to 4th Floor Bins
+    const defaultCampusBins = {
+      bin_01: {
+        location: "EN Bldg 1st floor",
+        fill_percent: 30,
+        is_full: false
+      },
+      bin_02: {
+        location: "EN Bldg 2nd floor",
+        fill_percent: 65,
+        is_full: false
+      },
+      bin_03: {
+        location: "EN Bldg 3rd floor",
+        fill_percent: 85,
+        is_full: true
+      },
+      bin_04: {
+        location: "EN Bldg 4th floor",
+        fill_percent: 15,
+        is_full: false
+      }
+    };
 
     function showAlert(msg, type = "error") {
       alertBox.textContent = msg;
@@ -401,21 +562,33 @@
       setTimeout(() => alertBox.style.display = "none", 4000);
     }
 
-    // Handle Login / Registration
+    // Tab Navigation
+    tabUserBtn.addEventListener("click", () => {
+      tabUserBtn.classList.add("active");
+      tabAdminBtn.classList.remove("active");
+      userSection.style.display = "block";
+      adminSection.style.display = "none";
+    });
+
+    tabAdminBtn.addEventListener("click", () => {
+      tabAdminBtn.classList.add("active");
+      tabUserBtn.classList.remove("active");
+      userSection.style.display = "none";
+      adminSection.style.display = "block";
+    });
+
+    // ==================== USER LOGIN & POINTS ====================
     loginBtn.addEventListener("click", () => {
       const rawName = usernameInput.value.trim();
       if (!rawName) {
-        showAlert("Please enter a username or student ID!");
+        showAlert("Please enter a username!");
         return;
       }
-
-      // Sanitize username for Firebase path (alphanumeric only)
       const userId = rawName.toLowerCase().replace(/[^a-z0-9_-]/g, "");
       if (!userId) {
         showAlert("Please use alphanumeric characters (a-z, 0-9)");
         return;
       }
-
       loginUser(userId, rawName);
     });
 
@@ -423,14 +596,13 @@
       currentUserId = userId;
       localStorage.setItem("smart_bin_user", JSON.stringify({ userId, friendlyName }));
 
-      authSection.style.display = "none";
-      dashboardSection.style.display = "block";
+      userAuthSubSection.style.display = "none";
+      userDashboardSubSection.style.display = "block";
       displayName.textContent = friendlyName;
 
-      // Generate QR Code containing the userId
       qrContainer.innerHTML = "";
       qrInstance = new QRCode(qrContainer, {
-        text: userId, // Raspberry Pi scanner reads this exact text
+        text: userId,
         width: 180,
         height: 180,
         colorDark: "#0f172a",
@@ -438,7 +610,6 @@
         correctLevel: QRCode.CorrectLevel.H
       });
 
-      // Listen for Live Point Changes
       listenForPoints(userId);
     }
 
@@ -447,71 +618,44 @@
     function listenForPoints(userId) {
       if (isFirebaseReady && db) {
         const userRef = db.ref("users/" + userId);
-
-        // Ensure user entry exists
         userRef.child("name").once("value", (snap) => {
           if (!snap.exists()) {
             userRef.set({ name: displayName.textContent, points: 0, lastUpdated: Date.now() });
           }
         });
 
-        // Realtime Listener - Fires INSTANTLY when Raspberry Pi writes to DB!
-        pointsListener = userRef.on("value", (snapshot) => {
+        userPointsListener = userRef.on("value", (snapshot) => {
           const data = snapshot.val();
           if (data) {
             updatePointsUI(data.points || 0);
           }
         });
       } else {
-        // Fallback for demonstration / local testing when Firebase config isn't added yet
-        showAlert("Tip: Put your Firebase databaseURL in index.html to connect live to Raspberry Pi!", "info");
-        
-        // Setup local storage simulation listener across tabs
         const saved = localStorage.getItem("points_" + userId) || 0;
         updatePointsUI(parseInt(saved, 10));
-
-        window.addEventListener("storage", (e) => {
-          if (e.key === "points_" + userId) {
-            updatePointsUI(parseInt(e.newValue || 0, 10));
-          }
-        });
       }
     }
 
     function updatePointsUI(newPoints) {
       if (previousPoints !== null && newPoints > previousPoints) {
-        const gained = newPoints - previousPoints;
-        triggerCelebration(gained);
+        chimeAudio.play().catch(() => {});
+        pointsDisplay.classList.add("bump");
+        setTimeout(() => pointsDisplay.classList.remove("bump"), 400);
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
       }
-
       pointsDisplay.textContent = newPoints;
       previousPoints = newPoints;
     }
 
-    function triggerCelebration(gained) {
-      // Audio chime
-      chimeAudio.play().catch(() => {});
+    logoutBtn.addEventListener("click", () => {
+      if (userPointsListener && db && currentUserId) {
+        db.ref("users/" + currentUserId).off("value", userPointsListener);
+      }
+      localStorage.removeItem("smart_bin_user");
+      location.reload();
+    });
 
-      // Point bounce animation
-      pointsDisplay.classList.add("bump");
-      setTimeout(() => pointsDisplay.classList.remove("bump"), 400);
-
-      // Confetti burst
-      confetti({
-        particleCount: 50,
-        spread: 60,
-        origin: { y: 0.6 }
-      });
-
-      // Add to log
-      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      const item = document.createElement("div");
-      item.className = "history-item";
-      item.innerHTML = `<span style="color:#34d399;">+${gained} point (Trash Disposed)</span><span>${timeStr}</span>`;
-      historyLog.prepend(item);
-    }
-
-    // Auto-login if previously logged in on this browser
+    // Auto-login user if stored
     const savedUser = localStorage.getItem("smart_bin_user");
     if (savedUser) {
       try {
@@ -523,14 +667,96 @@
       } catch (e) {}
     }
 
-    // Logout
-    logoutBtn.addEventListener("click", () => {
-      if (pointsListener && db && currentUserId) {
-        db.ref("users/" + currentUserId).off("value", pointsListener);
+    // ==================== ADMIN MULTI-LOCATION DASHBOARD ====================
+    adminLoginBtn.addEventListener("click", () => {
+      const enteredUser = adminUsernameInput.value.trim();
+      const enteredPass = adminPasswordInput.value;
+
+      if (enteredUser === ADMIN_CREDENTIALS.username && enteredPass === ADMIN_CREDENTIALS.password) {
+        adminAuthSubSection.style.display = "none";
+        adminDashboardSubSection.style.display = "block";
+        listenForBins();
+      } else {
+        showAlert("Access Denied: Invalid Personnel Credentials");
+        adminPasswordInput.value = "";
       }
-      localStorage.removeItem("smart_bin_user");
-      location.reload();
     });
+
+    // Allow pressing ENTER on password field to submit
+    adminPasswordInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        adminLoginBtn.click();
+      }
+    });
+
+    adminLogoutBtn.addEventListener("click", () => {
+      if (binsListener && db) {
+        db.ref("bins").off("value", binsListener);
+      }
+      adminDashboardSubSection.style.display = "none";
+      adminAuthSubSection.style.display = "block";
+      adminUsernameInput.value = "";
+      adminPasswordInput.value = "";
+    });
+
+    function listenForBins() {
+      if (isFirebaseReady && db) {
+        binsListener = db.ref("bins").on("value", (snapshot) => {
+          const data = snapshot.val() || {};
+          // Merge Firebase data with default campus locations
+          const merged = Object.assign({}, defaultCampusBins, data);
+          renderBinsList(merged);
+        });
+      } else {
+        renderBinsList(defaultCampusBins);
+      }
+    }
+
+    function renderBinsList(binsData) {
+      binsList.innerHTML = "";
+
+      Object.keys(binsData).forEach(key => {
+        const bin = binsData[key];
+        const locationName = bin.location || "Campus Location";
+        const percent = Math.min(100, Math.max(0, Math.round(bin.fill_percent || 0)));
+        const isFull = bin.is_full === true || percent >= 80;
+
+        let chipClass = "chip-ok";
+        let chipText = "🟢 NOT FULL";
+        let fillColor = "var(--primary)";
+
+        if (isFull) {
+          chipClass = "chip-full";
+          chipText = "🚨 FULL";
+          fillColor = "var(--danger)";
+        } else if (percent >= 60) {
+          chipClass = "chip-warning";
+          chipText = "🟡 FILLING UP";
+          fillColor = "var(--warning)";
+        }
+
+        const card = document.createElement("div");
+        card.className = `bin-card ${isFull ? 'is-full-card' : ''}`;
+        card.innerHTML = `
+          <div class="bin-header">
+            <div class="bin-location-title">
+              <span>📍</span> <span>${locationName}</span>
+            </div>
+            <div class="bin-status-chip ${chipClass}">
+              ${chipText}
+            </div>
+          </div>
+          <div class="capacity-header">
+            <span>BIN CAPACITY</span>
+            <span style="font-weight: 800; color: #ffffff;">${percent}%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" style="width: ${percent}%; background: ${fillColor};"></div>
+          </div>
+        `;
+        binsList.appendChild(card);
+      });
+    }
   </script>
 </body>
 </html>
