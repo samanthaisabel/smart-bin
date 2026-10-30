@@ -397,19 +397,29 @@
 
     <!-- ==================== 1. USER VIEW ==================== -->
     <div id="userSection">
-      <!-- User Login -->
+      <!-- User Login / Register Sub-Tabs -->
       <div id="userAuthSubSection">
+        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+          <button type="button" id="authModeLogin" class="tab-btn active" style="flex: 1; padding: 10px; font-size: 0.85rem;">
+            🔑 Existing User
+          </button>
+          <button type="button" id="authModeRegister" class="tab-btn" style="flex: 1; padding: 10px; font-size: 0.85rem;">
+            ✨ New User
+          </button>
+        </div>
+
         <div class="form-group">
-          <label>Username</label>
-          <input type="text" id="usernameInput" placeholder="Enter username (e.g. Alex)" autocomplete="off" />
+          <label id="userFieldLabel">Username</label>
+          <input type="text" id="usernameInput" placeholder="e.g. Alex" autocomplete="off" />
         </div>
         <div class="form-group">
-          <label>Password</label>
+          <label id="passwordFieldLabel">Password</label>
           <input type="password" id="userPasswordInput" placeholder="Enter your password" autocomplete="current-password" />
         </div>
-        <button class="btn btn-primary" id="loginBtn">Login / Register & Get QR</button>
-        <p style="font-size:0.75rem; text-align:center; color:var(--text-muted); margin-top:10px;">
-          * If you are a new user, your password is created on first login.
+
+        <button type="button" class="btn btn-primary" id="loginBtn">Login to My Account</button>
+        <p id="authHintText" style="font-size: 0.75rem; text-align: center; color: var(--text-muted); margin-top: 10px;">
+          Returning user? Enter your username and password.
         </p>
       </div>
 
@@ -480,8 +490,8 @@
        ===================================================================== */
     const firebaseConfig = {
       // REPLACE with your Firebase Realtime Database URL:
-      databaseURL: "https://smart-bin-1310e-default-rtdb.asia-southeast1.firebasedatabase.app/",
-      projectId: "smart-bin"
+      databaseURL: "https://smart-trash-bin-demo-default-rtdb.firebaseio.com",
+      projectId: "smart-trash-bin-demo"
     };
 
     let db = null;
@@ -507,6 +517,9 @@
     // User Elements
     const userAuthSubSection = document.getElementById("userAuthSubSection");
     const userDashboardSubSection = document.getElementById("userDashboardSubSection");
+    const authModeLogin = document.getElementById("authModeLogin");
+    const authModeRegister = document.getElementById("authModeRegister");
+    const authHintText = document.getElementById("authHintText");
     const usernameInput = document.getElementById("usernameInput");
     const userPasswordInput = document.getElementById("userPasswordInput");
     const loginBtn = document.getElementById("loginBtn");
@@ -515,6 +528,8 @@
     const pointsDisplay = document.getElementById("pointsDisplay");
     const qrContainer = document.getElementById("qrcode");
     const alertBox = document.getElementById("alertBox");
+
+    let isRegisterMode = false;
 
     // Admin Elements
     const adminAuthSubSection = document.getElementById("adminAuthSubSection");
@@ -585,7 +600,24 @@
       adminSection.style.display = "block";
     });
 
-    // ==================== USER LOGIN & REGISTRATION ====================
+    // ==================== USER LOGIN / REGISTER MODE SWITCH ====================
+    authModeLogin.addEventListener("click", () => {
+      isRegisterMode = false;
+      authModeLogin.classList.add("active");
+      authModeRegister.classList.remove("active");
+      loginBtn.textContent = "Login to My Account";
+      authHintText.textContent = "Returning user? Enter your username and password.";
+    });
+
+    authModeRegister.addEventListener("click", () => {
+      isRegisterMode = true;
+      authModeRegister.classList.add("active");
+      authModeLogin.classList.remove("active");
+      loginBtn.textContent = "Create Account & Get QR";
+      authHintText.textContent = "New user? Choose a username and create a password.";
+    });
+
+    // ==================== USER AUTHENTICATION HANDLER ====================
     loginBtn.addEventListener("click", () => {
       const rawName = usernameInput.value.trim();
       const enteredPassword = userPasswordInput.value;
@@ -605,52 +637,90 @@
         return;
       }
 
-      // Check username & password in Firebase
+      const defaultBtnText = isRegisterMode ? "Create Account & Get QR" : "Login to My Account";
+      loginBtn.disabled = true;
+      loginBtn.textContent = "Please wait...";
+
+      const resetBtn = () => {
+        loginBtn.disabled = false;
+        loginBtn.textContent = defaultBtnText;
+      };
+
+      // Safety timeout: Re-enable button after 5 seconds if connection hangs
+      const timeoutId = setTimeout(() => {
+        resetBtn();
+        showAlert("Connection timeout. Please check your internet or Firebase config.");
+      }, 5000);
+
       if (isFirebaseReady && db) {
         const userRef = db.ref("users/" + userId);
+
         userRef.once("value", (snapshot) => {
-          if (!snapshot.exists()) {
-            // Brand new user: Register with password and 0 points
-            userRef.set({
-              name: rawName,
-              password: enteredPassword,
-              points: 0,
-              lastUpdated: Date.now()
-            }, (error) => {
-              if (error) {
-                showAlert("Registration failed: " + error.message);
+          clearTimeout(timeoutId);
+          resetBtn();
+
+          const userExists = snapshot.exists();
+
+          if (isRegisterMode) {
+            // === NEW USER REGISTRATION ===
+            if (userExists) {
+              showAlert(`Username '${rawName}' is already taken! Please choose another username.`);
+            } else {
+              userRef.set({
+                name: rawName,
+                password: enteredPassword,
+                points: 0,
+                lastUpdated: Date.now()
+              }, (err) => {
+                if (err) {
+                  showAlert("Registration failed: " + err.message);
+                } else {
+                  loginUser(userId, rawName);
+                }
+              });
+            }
+          } else {
+            // === EXISTING USER LOGIN ===
+            if (!userExists) {
+              showAlert(`Username '${rawName}' not found! Click '✨ New User' to register first.`);
+            } else {
+              const userData = snapshot.val() || {};
+              if (userData.password && userData.password !== enteredPassword) {
+                showAlert("Incorrect password! Please try again.");
+                userPasswordInput.value = "";
               } else {
                 loginUser(userId, rawName);
               }
-            });
-          } else {
-            // Existing user: Verify password
-            const userData = snapshot.val() || {};
-            if (userData.password && userData.password !== enteredPassword) {
-              showAlert(`Incorrect password for '${rawName}'! If you are a different person, pick a unique username.`);
-              userPasswordInput.value = "";
-              return;
-            } else {
-              // Password matches! (Or older account without password)
-              if (!userData.password) {
-                userRef.child("password").set(enteredPassword);
-              }
-              loginUser(userId, rawName);
             }
           }
+        }, (err) => {
+          clearTimeout(timeoutId);
+          resetBtn();
+          showAlert("Database error: " + err.message);
         });
+
       } else {
-        // Fallback for local testing without Firebase
+        // Fallback for local simulation
+        clearTimeout(timeoutId);
+        resetBtn();
+
         const savedPass = localStorage.getItem("user_pwd_" + userId);
-        if (!savedPass) {
-          localStorage.setItem("user_pwd_" + userId, enteredPassword);
-          loginUser(userId, rawName);
-        } else if (savedPass !== enteredPassword) {
-          showAlert(`Incorrect password for '${rawName}'! If you are another person, choose another username.`);
-          userPasswordInput.value = "";
-          return;
+        if (isRegisterMode) {
+          if (savedPass) {
+            showAlert(`Username '${rawName}' is already taken!`);
+          } else {
+            localStorage.setItem("user_pwd_" + userId, enteredPassword);
+            loginUser(userId, rawName);
+          }
         } else {
-          loginUser(userId, rawName);
+          if (!savedPass) {
+            showAlert(`User '${rawName}' not found! Click '✨ New User' to register.`);
+          } else if (savedPass !== enteredPassword) {
+            showAlert("Incorrect password!");
+            userPasswordInput.value = "";
+          } else {
+            loginUser(userId, rawName);
+          }
         }
       }
     });
