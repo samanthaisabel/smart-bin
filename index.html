@@ -974,8 +974,9 @@
     // 100% free, no account needed. Works on Android, iOS, and desktop.
     // All staff subscribe once at: https://ntfy.sh/en-smartbin-alerts
     // Old setup: const NTFY_TOPIC = "en-smartbin-alerts";
-    const NTFY_TOPIC = "smartbin"; // Updated to short tracking target link
-    const NTFY_URL   = `https://ntfy.sh{NTFY_TOPIC}`;
+    const NTFY_TOPIC = "smartbin";
+    const NTFY_URL   = "https://ntfy.sh" + NTFY_TOPIC;
+
 
 
     // Track which bins already triggered an alert (avoid spam)
