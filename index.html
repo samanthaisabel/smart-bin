@@ -971,46 +971,30 @@
       });
     }
     // ==================== NTFY.SH PUSH NOTIFICATION INTEGRATION ====================
-    // 100% free, no account needed. Works on Android, iOS, and desktop.
-    // All staff subscribe once at: https://ntfy.sh/en-smartbin-alerts
-    // Old setup: const NTFY_TOPIC = "en-smartbin-alerts";
+        // Make sure your URL string looks exactly like this single line:
     const NTFY_URL = "https://ntfy.sh";
 
-
-    // Track which bins already triggered an alert (avoid spam)
-    const alertedBins = {};
-
-    /**
-     * Sends a no-reply push notification text to all subscribers via ntfy.sh.
-     * Called automatically when a bin hits ≥80% fill.
-     */
-       async function sendNtfyAlert(binKey, location, fillPercent, isTest = false) {
-      const title   = isTest
-        ? "Smart Bin Notification Works"
-        : `Bin Full: ${location}`;
-      
-      const message = isTest
-        ? "test notification"
-        : `Location: ${location} has reached ${fillPercent}% capacity. Please dispatch maintenance to empty the bin immediately.`;
+    async function sendNtfyAlert(binKey, location, fillPercent, isTest = false) {
+      const title   = isTest ? "Smart Bin Notification Works" : `Bin Full: ${location}`;
+      const message = isTest ? "test notification" : `Location: ${location} is full.`;
 
       try {
         const res = await fetch(NTFY_URL, {
           method: "POST",
           body: message,
           headers: {
-            "Title":    title,
-            "Priority": isTest ? "default" : "urgent",
-            "Tags":     isTest ? "test_tube" : "warning,wastebasket,rotating_light"
+            "Title": title,
+            "Priority": isTest ? "default" : "urgent"
           }
         });
         if (res.ok) {
-          console.log(`[ntfy] Alert sent for ${binKey}: ${title}`);
-          if (!isTest) alertedBins[binKey] = true;
+          console.log(`[ntfy] Alert sent successfully!`);
         }
       } catch (err) {
         console.warn("[ntfy] Could not send push notification:", err);
       }
     }
+
 
     // Test button handler
     document.getElementById("ntfyTestBtn").addEventListener("click", async () => {
