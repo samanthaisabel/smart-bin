@@ -472,10 +472,10 @@
         : "Bin full at location: " + location + ". It has reached " + fillPercent + " percent capacity.";
 
       try {
+        // Hardcoding the full URL inside the fetch eliminates any variable errors
         const res = await fetch("https://ntfy.sh", {
           method: "POST",
           body: message,
-          // Removed custom Title and Priority headers entirely to eliminate the error
           headers: {
             "Content-Type": "text/plain"
           }
@@ -488,6 +488,7 @@
         console.warn("[ntfy] Could not send push notification:", err);
       }
     }
+
 
 
     document.getElementById("ntfyTestBtn").addEventListener("click", async () => {
