@@ -466,32 +466,29 @@
     const NTFY_URL   = "https://ntfy.sh/smartbin";  // topic is part of the URL
     const alertedBins = {};                           // prevents duplicate alerts
 
-    async function sendNtfyAlert(binKey, location, fillPercent, isTest) {
-      isTest = isTest || false;
-      const title   = isTest ? "Smart Bin — Test Alert 🧪" : "🚨 Bin Full: " + location;
-      const message = isTest
-        ? "Test notification from Smart Bin admin dashboard.\nntfy.sh is working correctly! ✅"
-        : "📍 " + location + " has reached " + fillPercent + "% capacity.\n\nPlease empty the bin immediately.";
+        async function sendNtfyAlert(binKey, location, fillPercent, isTest = false) {
+      const message = isTest 
+        ? "Smart Bin Notification Works. This is a test notification." 
+        : "Bin full at location: " + location + ". It has reached " + fillPercent + " percent capacity.";
+
       try {
-        const res = await fetch(NTFY_URL, {
+        const res = await fetch("https://ntfy.sh", {
           method: "POST",
-          body:   message,
+          body: message,
+          // Removed custom Title and Priority headers entirely to eliminate the error
           headers: {
-            "Title":    title,
-            "Priority": isTest ? "default" : "urgent",
-            "Tags":     isTest ? "test_tube" : "warning,wastebasket,rotating_light"
+            "Content-Type": "text/plain"
           }
         });
         if (res.ok) {
-          console.log("[ntfy] ✅ Sent:", title);
+          console.log("[ntfy] Alert sent successfully!");
           if (!isTest && binKey) alertedBins[binKey] = true;
-        } else {
-          console.warn("[ntfy] Error status:", res.status);
         }
-      } catch(err) {
-        console.warn("[ntfy] Network error:", err);
+      } catch (err) {
+        console.warn("[ntfy] Could not send push notification:", err);
       }
     }
+
 
     document.getElementById("ntfyTestBtn").addEventListener("click", async () => {
       const btn   = document.getElementById("ntfyTestBtn");
