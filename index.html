@@ -980,13 +980,15 @@
      * Sends a no-reply push notification text to all subscribers via ntfy.sh.
      * Called automatically when a bin hits ≥80% fill.
      */
-    async function sendNtfyAlert(binKey, location, fillPercent, isTest = false) {
+       async function sendNtfyAlert(binKey, location, fillPercent, isTest = false) {
+      // 1. We keep the titles clean or append emojis safely to the message body text instead
       const title   = isTest
-        ? "Smart Bin — Test Alert 🧪"
-        : `🚨 Bin Full: ${location}`;
+        ? "Smart Bin - Test Alert"
+        : `Bin Full: ${location}`;
+      
       const message = isTest
-        ? `This is a test notification from the Smart Bin admin dashboard.\nIf you received this, ntfy.sh is working correctly! ✅`
-        : `📍 ${location} has reached ${fillPercent}% capacity.\n\nPlease dispatch maintenance to empty the bin immediately.`;
+        ? `🧪 This is a test notification from the Smart Bin admin dashboard.\nIf you received this, ntfy.sh is working correctly! ✅`
+        : `🚨 📍 ${location} has reached ${fillPercent}% capacity.\n\nPlease dispatch maintenance to empty the bin immediately. ⚠️`;
 
       try {
         const res = await fetch(NTFY_URL, {
@@ -995,6 +997,7 @@
           headers: {
             "Title":    title,
             "Priority": isTest ? "default" : "urgent",
+            // 2. CHANGED: Clean text strings with no raw emoji characters for ntfy tags
             "Tags":     isTest ? "test_tube" : "warning,wastebasket,rotating_light"
           }
         });
@@ -1006,6 +1009,7 @@
         console.warn("[ntfy] Could not send push notification:", err);
       }
     }
+
 
     // Test button handler
     document.getElementById("ntfyTestBtn").addEventListener("click", async () => {
