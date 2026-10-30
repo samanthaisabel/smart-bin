@@ -236,8 +236,8 @@
             <div class="ntfy-banner-title">Live Push Notifications — ntfy.sh</div>
             <div class="ntfy-banner-desc">
               Notifications are sent to phones when a bin is full.<br>
-              Install the ntfy app, then click for alerts:
-              <a href="https://ntfy.sh/smartbin" target="_blank">ntfy.sh/smartbin</a>
+              <a id="ntfyInstallLink" href="https://ntfy.sh/" target="_blank" rel="noopener">Install the ntfy app</a>,
+              then <a href="https://ntfy.sh/smartbin" target="_blank" rel="noopener">click for alerts</a>.
             </div>
             <button class="ntfy-test-btn" id="ntfyTestBtn">📤 Send Test Alert</button>
             <span class="ntfy-sent-badge" id="ntfySentBadge">✓ Sent!</span>
@@ -463,7 +463,19 @@
     /* ── NTFY.SH PUSH NOTIFICATIONS ── */
     const NTFY_TOPIC = "smartbin";
     const NTFY_URL = "https://ntfy.sh/" + NTFY_TOPIC;
+    const NTFY_INSTALL_ANDROID = "https://play.google.com/store/apps/details?id=io.heckel.ntfy";
+    const NTFY_INSTALL_IOS = "https://apps.apple.com/app/ntfy/id1625396347";
+    const NTFY_INSTALL_PAGE = "https://ntfy.sh/";
     const alertedBins = {};
+
+    (function setNtfyInstallLink() {
+      const link = document.getElementById("ntfyInstallLink");
+      if (!link) return;
+      const ua = navigator.userAgent || "";
+      if (/iPhone|iPad|iPod/i.test(ua)) link.href = NTFY_INSTALL_IOS;
+      else if (/Android/i.test(ua)) link.href = NTFY_INSTALL_ANDROID;
+      else link.href = NTFY_INSTALL_PAGE;
+    })();
 
     async function sendNtfyAlert(binKey, location, fillPercent, isTest = false) {
       const message = isTest
