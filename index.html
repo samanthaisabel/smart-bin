@@ -463,42 +463,46 @@
        Topic: smartbin
        Subscribe: https://ntfy.sh/smartbin
        ─────────────────────────────────────────── */
-    const NTFY_URL = "https://ntfy.sh";  // topic is part of the URL
+    const NTFY_TOPIC = "smartbin";
+    const NTFY_URL = "https://ntfy.sh/" + NTFY_TOPIC;
     const alertedBins = {};                           // prevents duplicate alerts
 
-        async function sendNtfyAlert(binKey, location, fillPercent, isTest = false) {
-      const message = isTest 
-        ? "Smart Bin Notification Works. This is a test notification." 
+    async function sendNtfyAlert(binKey, location, fillPercent, isTest = false) {
+      const message = isTest
+        ? "Smart Bin Notification Works. This is a test notification."
         : "Bin full at location: " + location + ". It has reached " + fillPercent + " percent capacity.";
 
       try {
-        // Hardcoding the full URL inside the fetch eliminates any variable errors
-        const res = await fetch("https://ntfy.sh", {
+        // ntfy only delivers if the topic is in the URL, e.g. https://ntfy.sh/smartbin
+        const res = await fetch(NTFY_URL, {
           method: "POST",
-          body: message,
-          headers: {
-            "Content-Type": "text/plain"
-          }
+          body: message
         });
         if (res.ok) {
           console.log("[ntfy] Alert sent successfully!");
           if (!isTest && binKey) alertedBins[binKey] = true;
+          return true;
         }
+        console.warn("[ntfy] Server error:", res.status);
+        return false;
       } catch (err) {
         console.warn("[ntfy] Could not send push notification:", err);
+        return false;
       }
     }
-
-
 
     document.getElementById("ntfyTestBtn").addEventListener("click", async () => {
       const btn   = document.getElementById("ntfyTestBtn");
       const badge = document.getElementById("ntfySentBadge");
       btn.disabled = true; btn.textContent = "Sending…";
-      await sendNtfyAlert(null, null, null, true);
+      const ok = await sendNtfyAlert(null, null, null, true);
       btn.textContent = "📤 Send Test Alert"; btn.disabled = false;
-      badge.classList.add("show");
-      setTimeout(() => badge.classList.remove("show"), 3000);
+      if (ok) {
+        badge.classList.add("show");
+        setTimeout(() => badge.classList.remove("show"), 3000);
+      } else {
+        showAlert("Could not send the ntfy alert. Subscribe at ntfy.sh/smartbin and try again.");
+      }
     });
 
     function checkBinsForAlerts(binsData) {
