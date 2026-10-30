@@ -400,10 +400,17 @@
       <!-- User Login -->
       <div id="userAuthSubSection">
         <div class="form-group">
-          <label>Enter Username</label>
-          <input type="text" id="usernameInput" placeholder="e.g. Alex" />
+          <label>Username</label>
+          <input type="text" id="usernameInput" placeholder="Enter username (e.g. Alex)" autocomplete="off" />
         </div>
-        <button class="btn btn-primary" id="loginBtn">Get QR Code</button>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="userPasswordInput" placeholder="Enter your password" autocomplete="current-password" />
+        </div>
+        <button class="btn btn-primary" id="loginBtn">Login / Register & Get QR</button>
+        <p style="font-size:0.75rem; text-align:center; color:var(--text-muted); margin-top:10px;">
+          * If you are a new user, your password is created on first login.
+        </p>
       </div>
 
       <!-- User Dashboard -->
@@ -473,8 +480,8 @@
        ===================================================================== */
     const firebaseConfig = {
       // REPLACE with your Firebase Realtime Database URL:
-      databaseURL: "https://smart-bin-1310e-default-rtdb.asia-southeast1.firebasedatabase.app/",
-      projectId: "smart-bin"
+      databaseURL: "https://smart-trash-bin-demo-default-rtdb.firebaseio.com",
+      projectId: "smart-trash-bin-demo"
     };
 
     let db = null;
@@ -501,6 +508,7 @@
     const userAuthSubSection = document.getElementById("userAuthSubSection");
     const userDashboardSubSection = document.getElementById("userDashboardSubSection");
     const usernameInput = document.getElementById("usernameInput");
+    const userPasswordInput = document.getElementById("userPasswordInput");
     const loginBtn = document.getElementById("loginBtn");
     const logoutBtn = document.getElementById("logoutBtn");
     const displayName = document.getElementById("displayName");
@@ -531,26 +539,26 @@
     let userPointsListener = null;
     let binsListener = null;
 
-    // EN Building 1st to 4th Floor Bins
+    // EN Building 1st to 4th Floor Bins (Starts at 0% empty until Arduino sends data)
     const defaultCampusBins = {
       bin_01: {
         location: "EN Bldg 1st floor",
-        fill_percent: 30,
+        fill_percent: 0,
         is_full: false
       },
       bin_02: {
         location: "EN Bldg 2nd floor",
-        fill_percent: 65,
+        fill_percent: 0,
         is_full: false
       },
       bin_03: {
         location: "EN Bldg 3rd floor",
-        fill_percent: 85,
-        is_full: true
+        fill_percent: 0,
+        is_full: false
       },
       bin_04: {
         location: "EN Bldg 4th floor",
-        fill_percent: 15,
+        fill_percent: 0,
         is_full: false
       }
     };
@@ -577,19 +585,80 @@
       adminSection.style.display = "block";
     });
 
-    // ==================== USER LOGIN & POINTS ====================
+    // ==================== USER LOGIN & REGISTRATION ====================
     loginBtn.addEventListener("click", () => {
       const rawName = usernameInput.value.trim();
+      const enteredPassword = userPasswordInput.value;
+
       if (!rawName) {
         showAlert("Please enter a username!");
         return;
       }
+      if (!enteredPassword) {
+        showAlert("Please enter a password!");
+        return;
+      }
+
       const userId = rawName.toLowerCase().replace(/[^a-z0-9_-]/g, "");
       if (!userId) {
         showAlert("Please use alphanumeric characters (a-z, 0-9)");
         return;
       }
-      loginUser(userId, rawName);
+
+      // Check username & password in Firebase
+      if (isFirebaseReady && db) {
+        const userRef = db.ref("users/" + userId);
+        userRef.once("value", (snapshot) => {
+          if (!snapshot.exists()) {
+            // Brand new user: Register with password and 0 points
+            userRef.set({
+              name: rawName,
+              password: enteredPassword,
+              points: 0,
+              lastUpdated: Date.now()
+            }, (error) => {
+              if (error) {
+                showAlert("Registration failed: " + error.message);
+              } else {
+                loginUser(userId, rawName);
+              }
+            });
+          } else {
+            // Existing user: Verify password
+            const userData = snapshot.val() || {};
+            if (userData.password && userData.password !== enteredPassword) {
+              showAlert(`Incorrect password for '${rawName}'! If you are a different person, pick a unique username.`);
+              userPasswordInput.value = "";
+              return;
+            } else {
+              // Password matches! (Or older account without password)
+              if (!userData.password) {
+                userRef.child("password").set(enteredPassword);
+              }
+              loginUser(userId, rawName);
+            }
+          }
+        });
+      } else {
+        // Fallback for local testing without Firebase
+        const savedPass = localStorage.getItem("user_pwd_" + userId);
+        if (!savedPass) {
+          localStorage.setItem("user_pwd_" + userId, enteredPassword);
+          loginUser(userId, rawName);
+        } else if (savedPass !== enteredPassword) {
+          showAlert(`Incorrect password for '${rawName}'! If you are another person, choose another username.`);
+          userPasswordInput.value = "";
+          return;
+        } else {
+          loginUser(userId, rawName);
+        }
+      }
+    });
+
+    userPasswordInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        loginBtn.click();
+      }
     });
 
     function loginUser(userId, friendlyName) {
@@ -618,11 +687,6 @@
     function listenForPoints(userId) {
       if (isFirebaseReady && db) {
         const userRef = db.ref("users/" + userId);
-        userRef.child("name").once("value", (snap) => {
-          if (!snap.exists()) {
-            userRef.set({ name: displayName.textContent, points: 0, lastUpdated: Date.now() });
-          }
-        });
 
         userPointsListener = userRef.on("value", (snapshot) => {
           const data = snapshot.val();
