@@ -235,8 +235,9 @@
           <div class="ntfy-banner-body">
             <div class="ntfy-banner-title">Live Push Notifications — ntfy.sh</div>
             <div class="ntfy-banner-desc">
-              Notifications will be sent automatically whenever a bin is full.<br>
-              To activate these alerts, click here: <a href="https://ntfy.sh/smartbin" target="_blank">ntfy.sh/smartbin</a>
+              Notifications are sent to phones when a bin is full.<br>
+              Install the ntfy app, then click for alerts:
+              <a href="https://ntfy.sh/smartbin" target="_blank">ntfy.sh/smartbin</a>
             </div>
             <button class="ntfy-test-btn" id="ntfyTestBtn">📤 Send Test Alert</button>
             <span class="ntfy-sent-badge" id="ntfySentBadge">✓ Sent!</span>
@@ -459,13 +460,10 @@
       });
     }
 
-    /* ── NTFY.SH PUSH NOTIFICATIONS (100% free) ──
-       Topic: smartbin
-       Subscribe: https://ntfy.sh/smartbin
-       ─────────────────────────────────────────── */
+    /* ── NTFY.SH PUSH NOTIFICATIONS ── */
     const NTFY_TOPIC = "smartbin";
     const NTFY_URL = "https://ntfy.sh/" + NTFY_TOPIC;
-    const alertedBins = {};                           // prevents duplicate alerts
+    const alertedBins = {};
 
     async function sendNtfyAlert(binKey, location, fillPercent, isTest = false) {
       const message = isTest
@@ -473,11 +471,7 @@
         : "Bin full at location: " + location + ". It has reached " + fillPercent + " percent capacity.";
 
       try {
-        // ntfy only delivers if the topic is in the URL, e.g. https://ntfy.sh/smartbin
-        const res = await fetch(NTFY_URL, {
-          method: "POST",
-          body: message
-        });
+        const res = await fetch(NTFY_URL, { method: "POST", body: message });
         if (res.ok) {
           console.log("[ntfy] Alert sent successfully!");
           if (!isTest && binKey) alertedBins[binKey] = true;
@@ -501,7 +495,7 @@
         badge.classList.add("show");
         setTimeout(() => badge.classList.remove("show"), 3000);
       } else {
-        showAlert("Could not send the ntfy alert. Subscribe at ntfy.sh/smartbin and try again.");
+        showAlert("Could not send the alert. Install the ntfy app, then click ntfy.sh/smartbin.");
       }
     });
 
