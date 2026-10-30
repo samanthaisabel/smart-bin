@@ -541,19 +541,21 @@
 
       <!-- Admin Multi-Location Dashboard -->
       <div id="adminDashboardSubSection" style="display: none;">
-        <!-- ntfy.sh Notification Banner -->
+              <!-- ==================== NEW UPDATED BANNER ==================== -->
         <div class="ntfy-banner">
           <div class="ntfy-banner-icon">🔔</div>
           <div class="ntfy-banner-body">
             <div class="ntfy-banner-title">Live Push Notifications — ntfy.sh</div>
             <div class="ntfy-banner-desc">
-              Instant <strong>no-reply text alerts</strong> sent to all subscribed phones when a bin is full. 100% free, no account needed.<br>
-              Subscribe: <a href="https://ntfy.sh/en-smartbin-alerts" target="_blank">ntfy.sh/en-smartbin-alerts</a>
+              Instant <strong>no-reply text alerts</strong> sent to your phone when a bin capacity reaches 80% or more. 100% free, no account or payment needed.<br>
+              👉 <strong>Install this tracking link on your device to stay updated:</strong> 
+              <a href="https://ntfy.sh" target="_blank">ntfy.sh/smartbin</a>
             </div>
             <button class="ntfy-test-btn" id="ntfyTestBtn">📤 Send Test Alert</button>
             <span class="ntfy-sent-badge" id="ntfySentBadge">✓ Sent!</span>
           </div>
         </div>
+        <!-- ============================================================ -->
 
         <div style="font-size:0.85rem; font-weight:700; color:var(--text-muted); margin-bottom:12px; text-align:left;">
           BIN NETWORK LOCATIONS:
@@ -970,8 +972,10 @@
     // ==================== NTFY.SH PUSH NOTIFICATION INTEGRATION ====================
     // 100% free, no account needed. Works on Android, iOS, and desktop.
     // All staff subscribe once at: https://ntfy.sh/en-smartbin-alerts
-    const NTFY_TOPIC = "en-smartbin-alerts";
-    const NTFY_URL   = `https://ntfy.sh/${NTFY_TOPIC}`;
+    // Old setup: const NTFY_TOPIC = "en-smartbin-alerts";
+    const NTFY_TOPIC = "smartbin"; // Updated to short tracking target link
+    const NTFY_URL   = `https://ntfy.sh{NTFY_TOPIC}`;
+
 
     // Track which bins already triggered an alert (avoid spam)
     const alertedBins = {};
@@ -981,14 +985,13 @@
      * Called automatically when a bin hits ≥80% fill.
      */
        async function sendNtfyAlert(binKey, location, fillPercent, isTest = false) {
-      // 1. We keep the titles clean or append emojis safely to the message body text instead
       const title   = isTest
-        ? "Smart Bin - Test Alert"
+        ? "Smart Bin Notification Works"
         : `Bin Full: ${location}`;
       
       const message = isTest
-        ? `🧪 This is a test notification from the Smart Bin admin dashboard.\nIf you received this, ntfy.sh is working correctly! ✅`
-        : `🚨 📍 ${location} has reached ${fillPercent}% capacity.\n\nPlease dispatch maintenance to empty the bin immediately. ⚠️`;
+        ? "test notification"
+        : `Location: ${location} has reached ${fillPercent}% capacity. Please dispatch maintenance to empty the bin immediately.`;
 
       try {
         const res = await fetch(NTFY_URL, {
@@ -997,7 +1000,6 @@
           headers: {
             "Title":    title,
             "Priority": isTest ? "default" : "urgent",
-            // 2. CHANGED: Clean text strings with no raw emoji characters for ntfy tags
             "Tags":     isTest ? "test_tube" : "warning,wastebasket,rotating_light"
           }
         });
@@ -1009,7 +1011,6 @@
         console.warn("[ntfy] Could not send push notification:", err);
       }
     }
-
 
     // Test button handler
     document.getElementById("ntfyTestBtn").addEventListener("click", async () => {
