@@ -1038,6 +1038,25 @@
         }
       });
     }
+      // ==========================================
+    // PASTE HERE: SIMULATE 1ST FLOOR BIN AT 80% 
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', () => {
+      // Create a mock dataset matching your Firebase structure
+      const mockData = {
+        "simulated_bin_1": {
+          location: "1st Floor Bin",
+          fill_percent: 80,
+          is_full: true
+        }
+      };
+      
+      // Delay it by 2 seconds so you can see it fire after the page loads
+      setTimeout(() => {
+        console.log("[Simulation] Triggering 80% full bin event for 1st Floor...");
+        checkBinsForAlerts(mockData);
+      }, 2000);
+    });
 
   </script>
 </body>
